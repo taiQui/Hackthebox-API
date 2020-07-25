@@ -1,0 +1,354 @@
+#!/bin/python3
+# coding:utf-8
+
+# Author : taiQui
+
+import requests,json,argparse
+
+
+def parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n','--nb_machine',help="Active Machine number to print, default : all",default=-1,type=int)
+    return parser.parse_args()
+
+class Color:
+    BLACK = '\033[30m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    WHITE = '\033[37m'
+    UNDERLINE = '\033[4m'
+    RESET = '\033[0m'
+    ORANGE = '\033[33m'
+
+def getCMD(cmd):
+    command = cmd.split(' ')[0]
+    args = cmd.split(' ')[1:]
+    return command,args
+
+class HTB:
+    def __init__(self,API_KEY):
+        self.api_key = API_KEY
+        self.session = requests.Session()
+        self.BOXS = None
+    def getAllBox(self,_number=None,_active=True):
+        boxs = self.requests("https://www.hackthebox.eu/api/machines/get/all",_json=True)[::-1]
+        toprint = len(boxs) if _number == None else _number
+        BOX = []
+        for i in range(toprint):
+            tmp = {}
+            if _active:
+                if boxs[i]['retired'] == False:
+                    BOX.append(self.box2dic(boxs[i]))
+            else:
+                BOX.append(self.box2dic(boxs[i]))
+        self.BOXS = BOX
+        return BOX
+
+    def box2dic(self,r):
+        tmp = {}
+        tmp['name'] = r['name']
+        tmp['os'] = r['os']
+        tmp['ip'] = r['ip']
+        tmp['id'] = r['id']
+        tmp['rating'] = str(r['rating'])
+        tmp['points'] = str(r['points'])
+        tmp['user'] = str(r['user_owns'])
+        tmp['root'] = str(r['root_owns'])
+        # tmp['spawned'] = isUp(r['id'],spawned)
+        return tmp
+
+    def getSpawned(self):
+        return self.requests("https://www.hackthebox.eu/api/machines/spawned/",_json=True)
+
+    def isUp(self,id,spawned):
+        for i in spawned:
+            if i['id'] == id:
+                return i['spawned']
+        return False
+    @staticmethod
+    def rate2Color(point):
+        if point == 20:
+            return Color.GREEN+"[+]"+Color.RESET
+        if point == 30:
+            return Color.ORANGE+"[+]"+Color.RESET
+        if point == 40:
+            return Color.RED+"[+]"+Color.RESET
+        else:
+            return Color.WHITE+"[+]"+Color.RESET
+
+    def getAssigned(self):
+        return self.requests("https://www.hackthebox.eu/api/machines/assigned",_json=True)[0]['id']
+
+    def getBetterRated(self,_active=True,_number=None):
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        newlist = sorted(boxs, key=lambda k: k['rating'])[::-1]
+        print("="*(len("Best Rating")+4))
+        print("  Best Rating")
+        print("="*(len("Best Rating")+4))
+        max = _number if _number != None  else 10
+        for i in range(max):
+            self.printBox(newlist[i])
+
+    def getBoxByName(self,name,_active=False):
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        print("="*(len("  Result for {}".format(name))+4))
+        print("  Result for {}".format(name))
+        print("="*(len("  Result for {}".format(name))+4))
+        for box in boxs:
+            if box['name'].lower() == name.lower():
+                HTB.printBox(box)
+                return
+    def getBoxById(self,id,_active=False):
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        print("="*(len("  Result for {}".format(id))+4))
+        print("  Result for {}".format(id))
+        print("="*(len("  Result for {}".format(id))+4))
+        for box in boxs:
+            if int(box['id']) == int(id):
+                return box
+
+    def getBoxByDifficulty(self,difficulty,_active=True,_number=None):
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        if not difficulty.isdigit():
+            if difficulty.lower() in ['easy','ez','facile']:
+                difficulty = 20
+            elif difficulty.lower() in ['medium','moyen','normal']:
+                difficulty = 30
+            elif difficulty.lower() == "hard":
+                difficulty = 40
+            elif difficulty == "insane":
+                difficulty = 50
+            else:
+                raise Exception("Difficulty not understood for {}".format(difficulty))
+        print("="*(len("  Box with difficulty {}".format(difficulty))+4))
+        print("  Box with difficulty {}".format(difficulty))
+        print("="*(len("  Box with difficulty {}".format(difficulty))+4))
+        max = _number if _number != None  else len(boxs)
+        for i in range(len(boxs)):
+            if int(boxs[i]['points']) == int(difficulty):
+                HTB.printBox(boxs[i])
+    @staticmethod
+    def printBox(box):
+        print(HTB.rate2Color(int(box['points']))+" {} (ID: {}{}{}) {}".format(box['name'],Color.BLUE,box['id'],Color.RESET,box['rating']))
+        print("    {} - {}{}{}".format(box['os'],Color.YELLOW,box['ip'],Color.RESET))
+        print("    Points: {} | U: {} | R: {}".format(box['points'],box['user'],box['root']))
+
+    def getBoxByOS(self,os,_active=True,_number=None):
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        print("="*(len("Searching for {} OS Boxs".format(os))+4))
+        print("  Searching for {} OS Boxs".format(os))
+        print("="*(len("Searching for {} OS Boxs".format(os))+4))
+        max = _number if _number != None  else 30
+        for i in range(len(boxs)):
+            if boxs[i]['os'].lower() == os.lower():
+                self.printBox(boxs[i])
+
+    def setFlag(self,id,flag,difficulty=5,_name=None):
+        if _name != None :
+            id = self.getIdByName(_name)
+            if id == -1:
+                raise Exception('No box found for name {}'.format(_name))
+        r = self.requests("https://www.hackthebox.eu/api/machines/own",method="POST",data={"flag":flag,"id":id,"difficulty":difficulty*10},_json=True)
+        if r['success']:
+            print("Nice Job !")
+        else:
+            print("Try again !")
+    def reset(self,id,_name=None):
+        if _name != None :
+            id = self.getIdByName(_name)
+            if id == -1:
+                raise Exception('No box found for name {}'.format(_name))
+        r = self.requests("https://www.hackthebox.eu/api/vm/reset/{}".format(id),method="POST",_json=True)
+        if not int(r['success']):
+            print("[-] Error reset : {}".format(r))
+        else:
+            print('{}. [{:d}/{:d}].'.format(r['output'], r['used'], r['total']))
+
+    def start(self,id,_name=None):
+        if _name != None :
+            id = self.getIdByName(_name)
+            if id == -1:
+                raise Exception('No box found for name {}'.format(_name))
+        r = self.requests("https://www.hackthebox.eu/api/vm/vip/assign/{}".format(id),method="POST",_json=True)
+        print(r['status'])
+        if "Incorrect lab type" in r['status']:
+            print("You are probably not VIP")
+        elif "You already have an active machine." in r['status']:
+            print("Your current Active machine is :")
+            HTB.printBox(htb.getBoxById(htb.getAssigned()))
+    def stop(self,id,_name=None):
+        if _name != None :
+            id = self.getIdByName(_name)
+            if id == -1:
+                raise Exception('No box found for name {}'.format(_name))
+        r = self.requests("https://www.hackthebox.eu/api/vm/vip/remove/{}".format(id),method="POST",_json=True)
+        print(r['status'])
+        if "Incorrect lab type" in r['status']:
+            print("You are probably not VIP")
+
+    def extend(self,id,_name=None):
+        if _name != None :
+            id = self.getIdByName(_name)
+            if id == -1:
+                raise Exception('No box found for name {}'.format(_name))
+        r = self.requests("https://www.hackthebox.eu/api/vm/vip/extend/{}".format(id),method="POST",_json=True)
+        print(r['status'])
+        if "Incorrect lab type" in r['status']:
+            print("You are probably not VIP")
+
+    def getIdByName(self,name):
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        for box in boxs:
+            if box['name'].lower() == name.lower():
+                return box['id']
+        return -1
+
+    def requests(self,url,method="GET",data=None,_json=False):
+        head = {
+                    'User-Agent'     : 'YOLO HTB',
+                    'Authorization'  : 'Bearer {}'.format(self.api_key),
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Accept'         : 'application/json',
+                    'Connection'     : 'Close',
+                }
+        if method == "GET":
+            if _json:
+                return self.session.get(url,headers=head).json()
+            return self.session.get(url,headers=head).text
+        elif method == "POST":
+            if _json:
+                return self.session.post(url,headers=head,data=data).json()
+            return self.session.post(url,headers=head).text
+
+
+
+
+if __name__ == "__main__":
+    args = parser()
+    htb = HTB("API_KEY")
+    cmd = ""
+    print("HTB Shell - put help to get info")
+    cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
+    active = True
+    number = 20
+    while cmd.lower() != "exit" and cmd.lower() != "quit":
+        try:
+            command,args = getCMD(cmd)
+            if command.lower() == "help":
+                print("="*(len("HELP")+4))
+                print("  HELP")
+                print("="*(len("HELP")+4))
+                print("\n{}start{} ID".format(Color.GREEN,Color.RESET))
+                print("     Start Box")
+                print("{}stop{} ID".format(Color.GREEN,Color.RESET))
+                print("     Stop Box")
+                print("{}extend{} ID".format(Color.GREEN,Color.RESET))
+                print("     Extend Box time")
+                print("{}reset{} ID".format(Color.GREEN,Color.RESET))
+                print("     Reset Box")
+                print("{}flag{} ID FLAG [DIFFICULTY 1-10]".format(Color.GREEN,Color.RESET))
+                print("     Submit Flag")
+                print("{}getboxs{} [number]".format(Color.GREEN,Color.RESET))
+                print("     Get all box")
+                print("{}gbbo{} [number]".format(Color.GREEN,Color.RESET))
+                print("     Get Box by OS")
+                print("{}gbbd{} [number]".format(Color.GREEN,Color.RESET))
+                print("     Get Box by difficulty")
+                print("{}gbbr{} [number]".format(Color.GREEN,Color.RESET))
+                print("     Get Box sorted by rating")
+                print("{}getboxbyname{} NAME".format(Color.GREEN,Color.RESET))
+                print("     Get Box by name")
+                print("{}setActive{}".format(Color.GREEN,Color.RESET))
+                print("     Inverse active values, if you want or not get only active box from research ")
+                print("{}setNumber{} number".format(Color.GREEN,Color.RESET))
+                print("     Put the Box's number to print - default all active or 20")
+                print(Color.YELLOW+"ID"+Color.BLUE+" can be ID number or Box name")
+                print(Color.YELLOW+"Difficulty "+Color.BLUE+"for getboxbydifficulty can be Number or strings like \"easy\""+Color.RESET)
+            elif command.lower() == "setactive":
+                if active:
+                    active = False
+                    print("[+] Active variable set to False")
+                else:
+                    active = True
+                    print("[+] Active variable set to True")
+            elif command.lower() == "setnumber":
+                if len(args) == 0:
+                    print("[-] No args set to 20 by default")
+                    number = 20
+                else:
+                    if not args[0].isdigit():
+                        print("[-] Args value error, set to 20 by default")
+                        number = 20
+                    else:
+                        print("[+] Number set to {}".format(args[0]))
+                        number = int(args[0])
+            elif command.lower() == "start":
+                if args[0].isdigit():
+                    htb.start(args[0])
+                else:
+                    htb.start(args[0],_name=args[0])
+            elif command.lower() == "stop":
+                if args[0].isdigit():
+                    htb.stop(args[0])
+                else:
+                    htb.stop(args[0],_name=args[0])
+            elif command.lower() == "extend":
+                if args[0].isdigit():
+                    htb.extend(args[0])
+                else:
+                    htb.extend(args[0],_name=args[0])
+            elif command.lower() == "reset":
+                if args[0].isdigit():
+                    htb.reset(args[0])
+                else:
+                    htb.reset(args[0],_name=args[0])
+            elif command.lower() == "flag":
+                if len(args) < 3:
+                    difficulty = 5
+                else:
+                    if args[2].isdigit():
+                        if int(difficulty) <= 0 or int(difficulty) > 10:
+                            print("Difficulty not valid for {} - set to 5 by default".format(difficulty))
+                            difficulty = 5
+                        else:
+                            difficulty = args[2]
+                    else:
+                        print("Difficulty not valid for {} - Set to 5 by default".format(difficulty))
+                        difficulty = 5
+                if args[0].isdigit():
+                    htb.setFlag(args[0],args[1],difficulty=difficulty)
+                else:
+                    htb.setFlag(args[0],args[1],difficulty=difficulty,_name=args[0])
+            elif command.lower() == "getboxs":
+                print("="*(len("  All Box")+4))
+                print("  All Box")
+                print("="*(len("  All Box")+4))
+                for i in htb.getAllBox(_number=number,_active=active):
+                    HTB.printBox(i)
+            elif command.lower() == "gbbo":
+                if len(args) == 0:
+                    print("[-] Syntax error : gbbo OS")
+                else:
+                    htb.getBoxByOS(args[0],_number=number,_active=active)
+            elif command.lower() == "gbbd":
+                if len(args) == 0:
+                    print("[-] Syntax error : gbbd difficulty")
+                else:
+                    htb.getBoxByDifficulty(args[0],_number=number,_active=active)
+            elif command.lower() == "gbbr":
+                htb.getBetterRated(_active=active,_number=number)
+            elif command.lower() == "getboxbyname":
+                if len(args) == 0:
+                    print('[-] Syntax error getboxbyname NAME')
+                else:
+                    htb.getBoxByName(args[0])
+            else:
+                print("[-] Command not found")
+        except Exception as e:
+            print("Error in command: {}".format(e))
+        cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
+    # a.getBoxByDifficulty("e,_active=False)
