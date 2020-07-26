@@ -7,3 +7,7 @@ Hackthebox API in CLI
 # HELP
 
 ![help](img/help.png)
+
+# All Box
+
+![getallbox](img/getallboxs.png)
