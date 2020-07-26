@@ -111,6 +111,27 @@ class HTB:
             if int(box['id']) == int(id):
                 return box
 
+    def getOwned(self,_active=True):
+        r = self.requests("https://www.hackthebox.eu/api/machines/owns",_json=True)
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        for owned in r:
+            for box in boxs:
+                if box['id'] == owned['id']:
+                    HTB.printBox(box,user=owned['owned_user'],root=owned['owned_root'])
+
+    def getActiveNotOwned(self):
+        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=True)
+        r = self.requests("https://www.hackthebox.eu/api/machines/owns",_json=True)
+        ids = [a['id'] for a in r]
+        for box in boxs:
+            if box['id'] not in ids:
+                HTB.printBox(box,user=False,root=False)
+            else:
+                for owned in r:
+                    if owned['id'] == box['id']:
+                        if owned['owned_user'] ^ owned['owned_root']:
+                            HTB.printBox(box,user=owned['owned_user'],root=owned['owned_root'])
+
     def getBoxByDifficulty(self,difficulty,_active=True,_number=None):
         boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         if not difficulty.isdigit():
@@ -132,11 +153,20 @@ class HTB:
             if int(boxs[i]['points']) == int(difficulty):
                 HTB.printBox(boxs[i])
     @staticmethod
-    def printBox(box):
+    def printBox(box,user=None,root=None):
         print(HTB.rate2Color(int(box['points']))+" {} (ID: {}{}{}) {}".format(box['name'],Color.BLUE,box['id'],Color.RESET,box['rating']))
         print("    {} - {}{}{}".format(box['os'],Color.YELLOW,box['ip'],Color.RESET))
         print("    Points: {} | U: {} | R: {}".format(box['points'],box['user'],box['root']))
-
+        if user != None:
+            if user:
+                print("    User {}Owned{} !".format(Color.GREEN,Color.RESET))
+            else:
+                print("    User {}not Owned{} !".format(Color.RED,Color.RESET))
+        if root != None:
+            if root:
+                print("    Root {}Owned{} !".format(Color.GREEN,Color.RESET))
+            else:
+                print("    Root {}not Owned{} !".format(Color.RED,Color.RESET))
     def getBoxByOS(self,os,_active=True,_number=None):
         boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         print("="*(len("Searching for {} OS Boxs".format(os))+4))
@@ -229,7 +259,7 @@ class HTB:
 
 if __name__ == "__main__":
     args = parser()
-    htb = HTB("API_KEY")
+    htb = HTB(open('.api.txt').read().replace('\n',''))
     cmd = ""
     print("HTB Shell - put help to get info")
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
@@ -252,16 +282,20 @@ if __name__ == "__main__":
                 print("     Reset Box")
                 print("{}flag{} ID FLAG [DIFFICULTY 1-10]".format(Color.GREEN,Color.RESET))
                 print("     Submit Flag")
-                print("{}getboxs{} [number]".format(Color.GREEN,Color.RESET))
+                print("{}getboxs{}".format(Color.GREEN,Color.RESET))
                 print("     Get all box")
-                print("{}gbbo{} [number]".format(Color.GREEN,Color.RESET))
+                print("{}gbbo{}".format(Color.GREEN,Color.RESET))
                 print("     Get Box by OS")
-                print("{}gbbd{} [number]".format(Color.GREEN,Color.RESET))
+                print("{}gbbd{}".format(Color.GREEN,Color.RESET))
                 print("     Get Box by difficulty")
-                print("{}gbbr{} [number]".format(Color.GREEN,Color.RESET))
+                print("{}gbbr{}".format(Color.GREEN,Color.RESET))
                 print("     Get Box sorted by rating")
                 print("{}getboxbyname{} NAME".format(Color.GREEN,Color.RESET))
                 print("     Get Box by name")
+                print("{}getowned{}".format(Color.GREEN,Color.RESET))
+                print("     Get Box owned")
+                print("{}getnotowned{}".format(Color.GREEN,Color.RESET))
+                print("     Get Active box not owned yet")
                 print("{}setActive{}".format(Color.GREEN,Color.RESET))
                 print("     Inverse active values, if you want or not get only active box from research ")
                 print("{}setNumber{} number".format(Color.GREEN,Color.RESET))
@@ -346,6 +380,10 @@ if __name__ == "__main__":
                     print('[-] Syntax error getboxbyname NAME')
                 else:
                     htb.getBoxByName(args[0])
+            elif command.lower() == "getowned":
+                htb.getOwned(_active=active)
+            elif command.lower() == "getnotowned":
+                htb.getActiveNotOwned()
             else:
                 print("[-] Command not found")
         except Exception as e:
