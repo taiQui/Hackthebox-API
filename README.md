@@ -4,9 +4,9 @@ Little script to handle hackthebox requests
 
 Hackthebox API in CLI
 
-========
-  HELP
-========
+# ========
+HELP
+# ========
 
 - start ID
 	- Start Box
@@ -28,6 +28,10 @@ Hackthebox API in CLI
 	- Get Box sorted by rating
 - getboxbyname NAME
 	- Get Box by name
+- getowned
+	- Get Box owned
+- getnotowned
+	- Get Active box not owned yet
 - setActive
 	- Inverse active values, if you want or not get only active box from research 
 - setNumber number
