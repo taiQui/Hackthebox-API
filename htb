@@ -34,6 +34,7 @@ class HTB:
         self.api_key = API_KEY
         self.session = requests.Session()
         self.BOXS = None
+        self.active = None
     def getAllBox(self,_number=None,_active=True):
         boxs = self.requests("https://www.hackthebox.eu/api/machines/get/all",_json=True)[::-1]
         toprint = len(boxs) if _number == None else _number
@@ -46,6 +47,7 @@ class HTB:
             else:
                 BOX.append(self.box2dic(boxs[i]))
         self.BOXS = BOX
+        self.active = _active
         return BOX
 
     def box2dic(self,r):
@@ -84,7 +86,11 @@ class HTB:
         return self.requests("https://www.hackthebox.eu/api/machines/assigned",_json=True)[0]['id']
 
     def getBetterRated(self,_active=True,_number=None):
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         newlist = sorted(boxs, key=lambda k: k['rating'])[::-1]
         print("="*(len("Best Rating")+4))
         print("  Best Rating")
@@ -94,7 +100,11 @@ class HTB:
             self.printBox(newlist[i])
 
     def getBoxByName(self,name,_active=False):
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         print("="*(len("  Result for {}".format(name))+4))
         print("  Result for {}".format(name))
         print("="*(len("  Result for {}".format(name))+4))
@@ -103,7 +113,11 @@ class HTB:
                 HTB.printBox(box)
                 return
     def getBoxById(self,id,_active=False):
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         print("="*(len("  Result for {}".format(id))+4))
         print("  Result for {}".format(id))
         print("="*(len("  Result for {}".format(id))+4))
@@ -113,14 +127,22 @@ class HTB:
 
     def getOwned(self,_active=True):
         r = self.requests("https://www.hackthebox.eu/api/machines/owns",_json=True)
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         for owned in r:
             for box in boxs:
                 if box['id'] == owned['id']:
                     HTB.printBox(box,user=owned['owned_user'],root=owned['owned_root'])
 
     def getActiveNotOwned(self):
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=True)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         r = self.requests("https://www.hackthebox.eu/api/machines/owns",_json=True)
         ids = [a['id'] for a in r]
         for box in boxs:
@@ -133,7 +155,11 @@ class HTB:
                             HTB.printBox(box,user=owned['owned_user'],root=owned['owned_root'])
 
     def getBoxByDifficulty(self,difficulty,_active=True,_number=None):
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         if not difficulty.isdigit():
             if difficulty.lower() in ['easy','ez','facile']:
                 difficulty = 20
@@ -168,7 +194,11 @@ class HTB:
             else:
                 print("    Root {}not Owned{} !".format(Color.RED,Color.RESET))
     def getBoxByOS(self,os,_active=True,_number=None):
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         print("="*(len("Searching for {} OS Boxs".format(os))+4))
         print("  Searching for {} OS Boxs".format(os))
         print("="*(len("Searching for {} OS Boxs".format(os))+4))
@@ -231,7 +261,11 @@ class HTB:
             print("You are probably not VIP")
 
     def getIdByName(self,name):
-        boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
         for box in boxs:
             if box['name'].lower() == name.lower():
                 return box['id']
