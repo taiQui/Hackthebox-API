@@ -4,6 +4,8 @@
 # Author : taiQui
 
 import requests,json,argparse
+import urllib3
+urllib3.disable_warnings()
 
 
 def parser():
@@ -35,22 +37,25 @@ class HTB:
         self.session = requests.Session()
         self.BOXS = None
         self.active = None
+
     def getAllBox(self,_number=None,_active=True):
         boxs = self.requests("https://www.hackthebox.eu/api/machines/get/all",_json=True)[::-1]
+        owned = self.getOwned(_active=_active,_send=True)
         toprint = len(boxs) if _number == None else _number
         BOX = []
         for i in range(toprint):
             tmp = {}
+            user,root = HTB.isOwned(boxs[i]['id'],owned)
             if _active:
                 if boxs[i]['retired'] == False:
-                    BOX.append(self.box2dic(boxs[i]))
+                    BOX.append(self.box2dic(boxs[i],user=user,root=root))
             else:
-                BOX.append(self.box2dic(boxs[i]))
+                BOX.append(self.box2dic(boxs[i],user=user,root=root))
         self.BOXS = BOX
         self.active = _active
         return BOX
 
-    def box2dic(self,r):
+    def box2dic(self,r,user=None,root=None):
         tmp = {}
         tmp['name'] = r['name']
         tmp['os'] = r['os']
@@ -60,11 +65,25 @@ class HTB:
         tmp['points'] = str(r['points'])
         tmp['user'] = str(r['user_owns'])
         tmp['root'] = str(r['root_owns'])
+        if user:
+            tmp['owned_user'] = True
+        else:
+            tmp['owned_user'] = False
+        if root:
+            tmp['owned_root'] = True
+        else:
+            tmp['owned_root'] = False
         # tmp['spawned'] = isUp(r['id'],spawned)
         return tmp
 
     def getSpawned(self):
         return self.requests("https://www.hackthebox.eu/api/machines/spawned/",_json=True)
+    @staticmethod
+    def isOwned(id,owned):
+        for box in owned:
+            if id == box['id']:
+                return box['owned_user'],box['owned_root']
+        return None,None
 
     def isUp(self,id,spawned):
         for i in spawned:
@@ -112,32 +131,27 @@ class HTB:
             if box['name'].lower() == name.lower():
                 HTB.printBox(box)
                 return
-    def getBoxById(self,id,_active=False):
+    def getBoxById(self,id,_active=False,_noprint=False):
         boxs = None
         if _active != self.active:
             boxs = self.getAllBox(_active=_active)
         else:
             boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
-        print("="*(len("  Result for {}".format(id))+4))
-        print("  Result for {}".format(id))
-        print("="*(len("  Result for {}".format(id))+4))
+        if not _noprint:
+            print("="*(len("  Result for {}".format(id))+4))
+            print("  Result for {}".format(id))
+            print("="*(len("  Result for {}".format(id))+4))
         for box in boxs:
             if int(box['id']) == int(id):
                 return box
 
-    def getOwned(self,_active=True):
+    def getOwned(self,_active=True,_send=False):
         r = self.requests("https://www.hackthebox.eu/api/machines/owns",_json=True)
-        boxs = None
-        if _active != self.active:
-            boxs = self.getAllBox(_active=_active)
-        else:
-            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        if _send:
+            return r
         for owned in r:
-            for box in boxs:
-                if box['id'] == owned['id']:
-                    HTB.printBox(box,user=owned['owned_user'],root=owned['owned_root'])
-
-    def getActiveNotOwned(self):
+            HTB.printBox(self.getBoxById(owned['id'],_noprint=True))
+    def getActiveNotOwned(self,_active=True):
         boxs = None
         if _active != self.active:
             boxs = self.getAllBox(_active=_active)
@@ -147,12 +161,12 @@ class HTB:
         ids = [a['id'] for a in r]
         for box in boxs:
             if box['id'] not in ids:
-                HTB.printBox(box,user=False,root=False)
+                HTB.printBox(box)
             else:
                 for owned in r:
                     if owned['id'] == box['id']:
                         if owned['owned_user'] ^ owned['owned_root']:
-                            HTB.printBox(box,user=owned['owned_user'],root=owned['owned_root'])
+                            HTB.printBox(box)
 
     def getBoxByDifficulty(self,difficulty,_active=True,_number=None):
         boxs = None
@@ -179,20 +193,21 @@ class HTB:
             if int(boxs[i]['points']) == int(difficulty):
                 HTB.printBox(boxs[i])
     @staticmethod
-    def printBox(box,user=None,root=None):
+    def printBox(box):
         print(HTB.rate2Color(int(box['points']))+" {} (ID: {}{}{}) {}".format(box['name'],Color.BLUE,box['id'],Color.RESET,box['rating']))
         print("    {} - {}{}{}".format(box['os'],Color.YELLOW,box['ip'],Color.RESET))
-        print("    Points: {} | U: {} | R: {}".format(box['points'],box['user'],box['root']))
-        if user != None:
-            if user:
-                print("    User {}Owned{} !".format(Color.GREEN,Color.RESET))
-            else:
-                print("    User {}not Owned{} !".format(Color.RED,Color.RESET))
-        if root != None:
-            if root:
-                print("    Root {}Owned{} !".format(Color.GREEN,Color.RESET))
-            else:
-                print("    Root {}not Owned{} !".format(Color.RED,Color.RESET))
+        user = ""
+        root = ""
+        if box['owned_user']:
+            user = "{} U: {}{}".format(Color.GREEN,box['user'],Color.RESET)
+        else:
+            user = "{} U: {}{}".format(Color.RED,box['user'],Color.RESET)
+        if box['owned_root']:
+            root = "{} R: {}{}".format(Color.GREEN,box['root'],Color.RESET)
+        else:
+            root = "{} R: {}{}".format(Color.RED,box['root'],Color.RESET)
+        print("    Points: {} | {} | {}".format(box['points'],user,root))
+
     def getBoxByOS(self,os,_active=True,_number=None):
         boxs = None
         if _active != self.active:
@@ -281,12 +296,12 @@ class HTB:
                 }
         if method == "GET":
             if _json:
-                return self.session.get(url,headers=head).json()
-            return self.session.get(url,headers=head).text
+                return self.session.get(url,headers=head,verify=False).json()
+            return self.session.get(url,headers=head,verify=False).text
         elif method == "POST":
             if _json:
-                return self.session.post(url,headers=head,data=data).json()
-            return self.session.post(url,headers=head).text
+                return self.session.post(url,headers=head,data=data,verify=False).json()
+            return self.session.post(url,headers=head,verify=False).text
 
 
 
@@ -415,7 +430,7 @@ if __name__ == "__main__":
                 else:
                     htb.getBoxByName(args[0])
             elif command.lower() == "getowned":
-                htb.getOwned(_active=active)
+                htb.getOwned(_active=active,_send=False)
             elif command.lower() == "getnotowned":
                 htb.getActiveNotOwned()
             else:
