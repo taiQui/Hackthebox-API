@@ -20,5 +20,3 @@ Hackthebox API in CLI
 
 
 
-# To-Do
-- fix print to set Color on U: x| R:x instead of "User owned/not owned" 
