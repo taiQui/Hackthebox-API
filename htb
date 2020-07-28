@@ -228,7 +228,7 @@ class HTB:
             if id == -1:
                 raise Exception('No box found for name {}'.format(_name))
         r = self.requests("https://www.hackthebox.eu/api/machines/own",method="POST",data={"flag":flag,"id":id,"difficulty":difficulty*10},_json=True)
-        if r['success']:
+        if r['success'] == '1':
             print("Nice Job !")
         else:
             print("Try again !")
@@ -390,6 +390,7 @@ if __name__ == "__main__":
                 else:
                     htb.reset(args[0],_name=args[0])
             elif command.lower() == "flag":
+                difficulty = 5
                 if len(args) < 3:
                     difficulty = 5
                 else:
@@ -398,7 +399,7 @@ if __name__ == "__main__":
                             print("Difficulty not valid for {} - set to 5 by default".format(difficulty))
                             difficulty = 5
                         else:
-                            difficulty = args[2]
+                            difficulty = int(args[2])
                     else:
                         print("Difficulty not valid for {} - Set to 5 by default".format(difficulty))
                         difficulty = 5
