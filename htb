@@ -77,7 +77,9 @@ class HTB:
         return tmp
 
     def getSpawned(self):
-        return self.requests("https://www.hackthebox.eu/api/machines/spawned/",_json=True)
+        r =  self.requests("https://www.hackthebox.eu/api/machines/spawned/",_json=True)
+        for box in r:
+            HTB.printBox(self.getBoxById(box['id'],_noprint=True))
     @staticmethod
     def isOwned(id,owned):
         for box in owned:
@@ -345,6 +347,8 @@ if __name__ == "__main__":
                 print("     Get Box owned")
                 print("{}getnotowned{}".format(Color.GREEN,Color.RESET))
                 print("     Get Active box not owned yet")
+                print("{}getspawned{}".format(Color.GREEN,Color.RESET))
+                print("     Get spawned box")
                 print("{}setActive{}".format(Color.GREEN,Color.RESET))
                 print("     Inverse active values, if you want or not get only active box from research ")
                 print("{}setNumber{} number".format(Color.GREEN,Color.RESET))
@@ -434,6 +438,8 @@ if __name__ == "__main__":
                 htb.getOwned(_active=active,_send=False)
             elif command.lower() == "getnotowned":
                 htb.getActiveNotOwned()
+            elif command.lower() == "getspawned":
+                htb.getSpawned()
             else:
                 print("[-] Command not found")
         except Exception as e:
