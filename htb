@@ -310,7 +310,7 @@ class HTB:
 
 if __name__ == "__main__":
     args = parser()
-    htb = HTB(open('.api.txt').read().replace('\n',''))
+    htb = HTB(open('/home/taiqui/Documents/Hackthebox-API').read().replace('\n',''))
     cmd = ""
     print("HTB Shell - put help to get info")
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
@@ -335,9 +335,9 @@ if __name__ == "__main__":
                 print("     Submit Flag")
                 print("{}getboxs{}".format(Color.GREEN,Color.RESET))
                 print("     Get all box")
-                print("{}gbbo{}".format(Color.GREEN,Color.RESET))
+                print("{}gbbo{} OS".format(Color.GREEN,Color.RESET))
                 print("     Get Box by OS")
-                print("{}gbbd{}".format(Color.GREEN,Color.RESET))
+                print("{}gbbd{} difficulty (points)".format(Color.GREEN,Color.RESET))
                 print("     Get Box by difficulty")
                 print("{}gbbr{}".format(Color.GREEN,Color.RESET))
                 print("     Get Box sorted by rating")
