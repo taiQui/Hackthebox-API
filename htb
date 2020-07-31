@@ -97,6 +97,7 @@ class HTB:
     def getAllBox(self,_number=None,_active=True):
         boxs = self.requests("https://www.hackthebox.eu/api/machines/get/all",_json=True)[::-1]
         owned = self.getOwned(_active=_active,_send=True)
+        spawned = self.getSpawned(_send=True)
         toprint = len(boxs) if _number == None else _number
         BOX = []
         for i in range(toprint):
@@ -104,14 +105,14 @@ class HTB:
             user,root = HTB.isOwned(boxs[i]['id'],owned)
             if _active:
                 if boxs[i]['retired'] == False:
-                    BOX.append(self.box2dic(boxs[i],user=user,root=root))
+                    BOX.append(self.box2dic(boxs[i],user=user,root=root,spawned=spawned))
             else:
-                BOX.append(self.box2dic(boxs[i],user=user,root=root))
+                BOX.append(self.box2dic(boxs[i],user=user,root=root,spawned=spawned))
         self.BOXS = BOX
         self.active = _active
         return BOX
 
-    def box2dic(self,r,user=None,root=None):
+    def box2dic(self,r,user=None,root=None,spawned=None):
         tmp = {}
         tmp['name'] = r['name']
         tmp['os'] = r['os']
@@ -121,6 +122,10 @@ class HTB:
         tmp['points'] = str(r['points'])
         tmp['user'] = str(r['user_owns'])
         tmp['root'] = str(r['root_owns'])
+        if spawned != None:
+            tmp['spawned'] = HTB.isUp(r['id'],spawned)
+        else:
+            tmp['spawned'] = None
         if user:
             tmp['owned_user'] = True
         else:
@@ -132,18 +137,24 @@ class HTB:
         # tmp['spawned'] = isUp(r['id'],spawned)
         return tmp
 
-    def getSpawned(self):
+    def getSpawned(self,_send=False):
         r =  self.requests("https://www.hackthebox.eu/api/machines/spawned/",_json=True)
-        for box in r:
-            HTB.printBox(self.getBoxById(box['id'],_noprint=True))
+        if not _send:
+            for box in r:
+                HTB.printBox(self.getBoxById(box['id'],_noprint=True))
+        else:
+            boxs = []
+            for box in r:
+                boxs.append(box)
+            return boxs
     @staticmethod
     def isOwned(id,owned):
         for box in owned:
             if id == box['id']:
                 return box['owned_user'],box['owned_root']
         return None,None
-
-    def isUp(self,id,spawned):
+    @staticmethod
+    def isUp(id,spawned):
         for i in spawned:
             if i['id'] == id:
                 return i['spawned']
@@ -252,19 +263,25 @@ class HTB:
                 HTB.printBox(boxs[i])
     @staticmethod
     def printBox(box):
+
         print(HTB.rate2Color(int(box['points']))+" {} (ID: {}{}{}) {}".format(box['name'],Color.BLUE,box['id'],Color.RESET,box['rating']))
         print("    {} - {}{}{}".format(box['os'],Color.YELLOW,box['ip'],Color.RESET))
         user = ""
         root = ""
         if box['owned_user']:
-            user = "{} U: {}{}".format(Color.GREEN,box['user'],Color.RESET)
+            user = "{} U{}: {}".format(Color.GREEN,Color.RESET,box['user'])
         else:
-            user = "{} U: {}{}".format(Color.RED,box['user'],Color.RESET)
+            user = "{} U{}: {}".format(Color.RED,Color.RESET,box['user'])
         if box['owned_root']:
-            root = "{} R: {}{}".format(Color.GREEN,box['root'],Color.RESET)
+            root = "{} R{}: {}".format(Color.GREEN,Color.RESET,box['root'])
         else:
-            root = "{} R: {}{}".format(Color.RED,box['root'],Color.RESET)
-        print("    Points: {} | {} | {}".format(box['points'],user,root))
+            root = "{} R{}: {}".format(Color.RED,Color.RESET,box['root'])
+        if box['spawned']:
+            print("    Points: {} | {}{}{} | {} | {}".format(box['points'],Color.GREEN,"\u25cf",Color.RESET,user,root))
+        elif box['spawned'] == False:
+            print("    Points: {} | {}{}{} | {} | {}".format(box['points'],Color.RED,"\u25cf",Color.RESET,user,root))
+        else:
+            print("    Points: {} | {} | {}".format(box['points'],user,root))
 
     def getBoxByOS(self,os,_active=True,_number=None):
         boxs = None
