@@ -3,7 +3,7 @@
 
 # Author : taiQui
 
-import requests,json,argparse
+import requests,json,argparse,re
 import urllib3
 urllib3.disable_warnings()
 
@@ -30,6 +30,62 @@ def getCMD(cmd):
     command = cmd.split(' ')[0]
     args = cmd.split(' ')[1:]
     return command,args
+
+def getContent(msg):
+    box_pwn = "(?:.*)profile\/\d+\">(.*)<\/a> owned (.*) on <a(?:.*)profile\/(?:\d+)\">(.*)<\/a> <a(?:.*)"
+    chall_pwn = "(?:.*)profile\/\d+\">(.*)<\/a> solved challenge <(?:.*)>(.*)<(?:.*)><(?:.*)> from <(?:.*)>(.*)<(?:.*)><(?:.*)"
+    new_box_incoming =  "(?:.*)Get ready to spill some (?:.* blood .*! <.*>)(.*)<(?:.* available in <.*>)(.*)<(?:.*)><(?:.*)"
+    new_box_out= "(?:.*)>(.*)<(?:.*) is mass-powering on! (?:.*)"
+    vip_upgrade= "(?:.*)profile\/\d+\">(.*)<\/a> became a <(?:.*)><(?:.*)><(?:.*)> V.I.P <(?:.*)"
+    new_people = "(?:.*)profile\/\d+\">(.*)<\/a> just joined! Be polite and say hi :\)</p>"
+    speak = "(?:.*)profile\/\d+\">(.*)</a>(?:.*)</span>:(.*)</p>"
+    respect = "(?:.*)profile\/\d+\">(.*)</a> gave <span class=\"text-warning\">(?:.*)profile\/\d+\">(.*)</a></p>"
+    respect2 = "(?:.*)profile\/\d+\">(.*)</a> believes that (.*) is so pro! <span class=\"text-success\">\[ \+1 (.*)</p>"
+    badge = "(?:.*)profile\/\d+\">(.*)</a> has been awarded the <span class=\"c-white\">(.*)</span> badge.</p>"
+    reset = "(?:.*)profile\/\d+\">(.*)</a> issued a <span class=\"text-danger\">(.*)</span> on <span class=\"c-white\">(.*)</span> <span class=\"text-success\">\[(.*)\]</span> </p>"
+    fortress = "(?:.*)profile\/\d+\">(.*)</a> got flag <span class=\"text-success\">(.*)</span> from <a href=\"https://www.hackthebox.eu/.*\">(.*)</a> <span class=\"c-white\"><i class=\"fab fa-fort-awesome\"></i> .*</a></p>"
+    reset2 = "(?:.*)profile\/\d+\">(.*)</a> requested a <span class=\"text-danger\">reset</span> on <span class=\"c-white\">(.*)</span> <span class=\"text-success\">\[(.*)\]</span> \[Type <span class=\"c-white\">(.*)</span> <span class=\"text-success\">(.*)</span> within one minute to vote to cancel it.]</p>"
+
+    # get = re.compile(box_pwn).findall(msg)
+    # if len(get) > 0:
+    #     return "{} owned {} on {}".format(get[0][0],get[0][1],get[0][2])
+    # get = re.compile(chall_pwn).findall(msg)
+    # if len(get) > 0:
+    #     return "{} solved {} from {} category".format(get[0][0],get[0][1],get[0][2])
+    # get = re.compile(new_box_incoming).findall(msg)
+    # if len(get) > 0:
+    #     return ' '.join(get)
+    # get = re.compile(new_box_out).findall(msg)
+    # if len(get) > 0:
+    #     return ' '.join(get)
+    # get = re.compile(vip_upgrade).findall(msg)
+    # if len(get) > 0:
+    #     return '{} just become V.I.P'.format(get[0])
+    # get = re.compile(new_people).findall(msg)
+    # if len(get) > 0:
+    #     return "{} just joined the shoutbox".format(get[0])
+    get = re.compile(speak).findall(msg)
+    if len(get) > 0:
+        return "{} : {}".format(get[0][0],get[0][1])
+    # get = re.compile(respect).findall(msg)
+    # if len(get) > 0:
+    #     return "{} give respect to {}".format(get[0][0],get[0][1])
+    # get = re.compile(respect2).findall(msg)
+    # if len(get) > 0:
+    #     return("{} give respect to {}".format(get[0][0],get[0][1]))
+    # get = re.compile(badge).findall(msg)
+    # if len(get) > 0:
+    #     return "{} got {} badge !".format(get[0][0],get[0][1])
+    get = re.compile(reset).findall(msg)
+    if len(get) > 0:
+        return "{} issued a {} on {} from [{}]".format(get[0][0],get[0][1],get[0][2],get[0][3])
+    # get = re.compile(fortress).findall(msg)
+    # if len(get) > 0:
+    #     return "{} got flag {} from {}".format(get[0][0],get[0][1],get[0][2])
+    get = re.compile(reset2).findall(msg)
+    if len(get) > 0:
+        return "{} ask for reset {} in [{}] type {} {} to cancel it".format(get[0][0],get[0][1],get[0][2],get[0][3],get[0][4])
+    return None
 
 class HTB:
     def __init__(self,API_KEY):
@@ -229,6 +285,7 @@ class HTB:
             id = self.getIdByName(_name)
             if id == -1:
                 raise Exception('No box found for name {}'.format(_name))
+        print(id)
         r = self.requests("https://www.hackthebox.eu/api/machines/own",method="POST",data={"flag":flag,"id":id,"difficulty":difficulty*10},_json=True)
         if r['success'] == '1':
             print("Nice Job !")
@@ -277,7 +334,7 @@ class HTB:
         if "Incorrect lab type" in r['status']:
             print("You are probably not VIP")
 
-    def getIdByName(self,name):
+    def getIdByName(self,name,_active=False):
         boxs = None
         if _active != self.active:
             boxs = self.getAllBox(_active=_active)
@@ -287,7 +344,41 @@ class HTB:
             if box['name'].lower() == name.lower():
                 return box['id']
         return -1
+    def shoutBox(self):
+        import time
+        cache = []
+        print("="*(len("  Shoutbox")+4))
+        print("  Shoutbox - Ctrl+c to leave")
+        print("="*(len("  Shoutbox")+4))
+        while True:
+            try:
+                r = self.requests("https://www.hackthebox.eu/api/shouts/get/initial/html/5",method="POST",_json=True)
+                for msg in r['html']:
+                    tmp = getContent(msg)
+                    if tmp == None:
+                        continue
+                    if tmp not in cache:
+                        if len(cache) <= 5:
+                            cache.append(tmp)
+                            print(" -> {}".format(tmp))
+                        else:
+                            cache = cache[1:]
+                            cache.append(tmp)
+                            print(" -> {}".format(tmp))
+                time.sleep(1)
+            except KeyboardInterrupt:
+                print("[*] Type exit or quit to leave shoutbox, or a message to send to the shoutbox")
+                tmp = input("$~ ")
+                if tmp.lower() in ['exit','quit']:
+                    return
+                else:
+                    if self.send2Shoutbox(tmp):
+                        print("[+] Message Sent !")
 
+
+    def send2Shoutbox(self,text):
+        r = self.requests("https://www.hackthebox.eu/api/shouts/new",method="POST",data = { "text" : text },_json=True)
+        return r['success'] == '1'
     def requests(self,url,method="GET",data=None,_json=False):
         head = {
                     'User-Agent'     : 'YOLO HTB',
@@ -302,15 +393,21 @@ class HTB:
             return self.session.get(url,headers=head,verify=False).text
         elif method == "POST":
             if _json:
-                return self.session.post(url,headers=head,data=data,verify=False).json()
-            return self.session.post(url,headers=head,verify=False).text
+                if data == None:
+                    return self.session.post(url,headers=head,verify=False).json()
+                else:
+                    return self.session.post(url,headers=head,data=data,verify=False).json()
+            if data == None:
+                return self.session.post(url,headers=head,verify=False).text
+            else:
+                return self.session.post(url,headers=head,data=data,verify=False).text
 
 
 
 
 if __name__ == "__main__":
     args = parser()
-    htb = HTB(open('/home/taiqui/Documents/Hackthebox-API').read().replace('\n',''))
+    htb = HTB(open('/home/taiqui/Documents/Hackthebox-API/.api.txt').read().replace('\n',''))
     cmd = ""
     print("HTB Shell - put help to get info")
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
@@ -349,6 +446,8 @@ if __name__ == "__main__":
                 print("     Get Active box not owned yet")
                 print("{}getspawned{}".format(Color.GREEN,Color.RESET))
                 print("     Get spawned box")
+                print("{}shoutbox{}".format(Color.GREEN,Color.RESET))
+                print("     Listen the shoutbox, permit to send to the shoutbox too")
                 print("{}setActive{}".format(Color.GREEN,Color.RESET))
                 print("     Inverse active values, if you want or not get only active box from research ")
                 print("{}setNumber{} number".format(Color.GREEN,Color.RESET))
@@ -440,6 +539,8 @@ if __name__ == "__main__":
                 htb.getActiveNotOwned()
             elif command.lower() == "getspawned":
                 htb.getSpawned()
+            elif command.lower() == "shoutbox":
+                htb.shoutBox()
             else:
                 print("[-] Command not found")
         except Exception as e:
