@@ -491,6 +491,8 @@ if __name__ == "__main__":
                 print("     Get spawned box")
                 print("{}shoutbox{}".format(Color.GREEN,Color.RESET))
                 print("     Listen the shoutbox, permit to send to the shoutbox too")
+                print("{}getbyfilter{} OS difficulty".format(Color.GREEN,Color.RESET))
+                print("     Get Box by some filter")
                 print("{}setActive{}".format(Color.GREEN,Color.RESET))
                 print("     Inverse active values, if you want or not get only active box from research ")
                 print("{}setNumber{} number".format(Color.GREEN,Color.RESET))
