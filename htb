@@ -351,6 +351,32 @@ class HTB:
         if "Incorrect lab type" in r['status']:
             print("You are probably not VIP")
 
+    def getByFilter(self,OS,difficulty,_active=True):
+        if not difficulty.isdigit():
+            if difficulty.lower() in ['easy','ez','facile']:
+                difficulty = 20
+            elif difficulty.lower() in ['medium','moyen','normal']:
+                difficulty = 30
+            elif difficulty.lower() == "hard":
+                difficulty = 40
+            elif difficulty == "insane":
+                difficulty = 50
+            else:
+                raise Exception("Difficulty not understood for {}".format(difficulty))
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        print("="*(len("OS : {}  | Difficulty : {}".format(OS,difficulty))+4))
+        print("  Searching with filter")
+        print("OS : {}  | Difficulty : {}".format(OS,difficulty))
+        print("="*(len("OS : {}  | Difficulty : {}".format(OS,difficulty))+4))
+        for box in boxs:
+            if box['os'].lower() == OS and box['points'] == str(difficulty):
+                HTB.printBox(box)
+
+
     def getIdByName(self,name,_active=False):
         boxs = None
         if _active != self.active:
@@ -558,6 +584,11 @@ if __name__ == "__main__":
                 htb.getSpawned()
             elif command.lower() == "shoutbox":
                 htb.shoutBox()
+            elif command.lower() == "getbyfilter":
+                if len(args) != 2:
+                    print("[-] Syntaxe error : getbyfilter OS difficulty")
+                else:
+                    htb.getByFilter(args[0],args[1],_active=active)
             else:
                 print("[-] Command not found")
         except Exception as e:
