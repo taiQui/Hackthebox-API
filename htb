@@ -4,6 +4,7 @@
 # Author : taiQui
 
 import requests,json,argparse,re
+from os import getcwd
 import urllib3
 urllib3.disable_warnings()
 
@@ -432,25 +433,44 @@ class HTB:
                 }
         if method == "GET":
             if _json:
-                return self.session.get(url,headers=head,verify=False).json()
-            return self.session.get(url,headers=head,verify=False).text
+                r = self.session.get(url,headers=head,verify=False)
+
+                if r.status_code == 401:
+                    raise Exception("Bad API key")
+                return r.json()
+            r =  self.session.get(url,headers=head,verify=False)
+            if r.status_code == 401:
+                raise Exception("Bad API key")
+            return r.text
         elif method == "POST":
             if _json:
                 if data == None:
-                    return self.session.post(url,headers=head,verify=False).json()
+                    r =  self.session.post(url,headers=head,verify=False)
+                    if r.status_code == 401:
+                        raise Exception("Bad API key")
+                    return r.json()
                 else:
-                    return self.session.post(url,headers=head,data=data,verify=False).json()
+                    r = self.session.post(url,headers=head,data=data,verify=False)
+                    if r.status_code == 401:
+                        raise Exception("Bad API key")
+                    return r.json()
             if data == None:
-                return self.session.post(url,headers=head,verify=False).text
+                r = self.session.post(url,headers=head,verify=False)
+                if r.status_code == 401:
+                    raise Exception('Bad API key')
+                return r.text
             else:
-                return self.session.post(url,headers=head,data=data,verify=False).text
-
+                r = self.session.post(url,headers=head,data=data,verify=False)
+                if r.status_code == 401:
+                    raise Exception('Bad API key')
+                return r.text
 
 
 
 if __name__ == "__main__":
     args = parser()
-    htb = HTB(open('/home/taiqui/Documents/Hackthebox-API/.api.txt').read().replace('\n',''))
+    path = getcwd()
+    htb = HTB(open(path+"/.api.txt").read().replace('\n',''))
     cmd = ""
     print("HTB Shell - put help to get info")
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
@@ -594,6 +614,7 @@ if __name__ == "__main__":
             else:
                 print("[-] Command not found")
         except Exception as e:
+            # raise(e)
             print("Error in command: {}".format(e))
         cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
     # a.getBoxByDifficulty("e,_active=False)
