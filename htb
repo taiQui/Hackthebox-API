@@ -4,10 +4,12 @@
 # Author : taiQui
 
 import requests,json,argparse,re
-from os import getcwd
+from os.path import isfile
+from os import getcwd,getenv
 import urllib3
 urllib3.disable_warnings()
 
+HOME = getenv('HOME')
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -469,8 +471,17 @@ class HTB:
 
 if __name__ == "__main__":
     args = parser()
-    path = getcwd()
-    htb = HTB(open(path+"/.api.txt").read().replace('\n',''))
+    key = ""
+    if not isfile(HOME+"/.htb_api.txt"):
+        print("[+] First time using HackTheBox API")
+        print("[+] Enter your API_key, it will be save in your Home directory")
+        key = input("[+] Enter your key : ")
+        with open(HOME+'/.htb_api.txt','w') as f:
+            f.write(key)
+    else:
+        with open(HOME+'/.htb_api.txt','r') as f:
+            key = f.read().replace('\n','')
+    htb = HTB(key)
     cmd = ""
     print("HTB Shell - put help to get info")
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
