@@ -537,7 +537,7 @@ if __name__ == "__main__":
                 print("     Get spawned box")
                 print("{}shoutbox{}".format(Color.GREEN,Color.RESET))
                 print("     Listen the shoutbox, permit to send to the shoutbox too")
-                print("{}profile{} name".format(Color.Green,Color.RESET))
+                print("{}profile{} name".format(Color.GREEN,Color.RESET))
                 print("     Get profile by name")
                 print("{}getbyfilter{} OS difficulty".format(Color.GREEN,Color.RESET))
                 print("     Get Box by some filter")
