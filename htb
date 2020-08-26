@@ -267,7 +267,7 @@ class HTB:
     @staticmethod
     def printBox(box):
 
-        print(HTB.rate2Color(int(box['points']))+" {} (ID: {}{}{}) {}".format(box['name'],Color.BLUE,box['id'],Color.RESET,box['rating']))
+        print(HTB.rate2Color(int(box['points']))+" {} (ID: {}{}{}) {}{}★{}".format(box['name'],Color.BLUE,box['id'],Color.RESET,box['rating'],Color.YELLOW,Color.RESET))
         print("    {} - {}{}{}".format(box['os'],Color.YELLOW,box['ip'],Color.RESET))
         user = ""
         root = ""
