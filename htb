@@ -420,6 +420,19 @@ class HTB:
                 else:
                     if self.send2Shoutbox(tmp):
                         print("[+] Message Sent !")
+    def getPersonnalInfo(self,name=None):
+        # if name == None:
+        #     name = input('Give your HTB name : ')
+        name = ""
+        r = self.requests("https://www.hackthebox.eu/api/user/profile",data={"username":name},_json=True)
+        print(r)
+        if r == "":
+            print("No Users found for name : {}".format(name))
+            return
+        print("Username : {} - id : {}".format(r['username'],r['id']))
+        print("Point : {} - User : {} - Root : {}".format(r['points'],r['userOwns'],r['rootOwns']))
+        print('Rank : {}'.format(r['rank']))
+        print('Profil URL : https://www.hackthebox.eu/home/users/profile/{}'.format(r['id']))
 
 
     def send2Shoutbox(self,text):
@@ -482,6 +495,8 @@ if __name__ == "__main__":
         with open(HOME+'/.htb_api.txt','r') as f:
             key = f.read().replace('\n','')
     htb = HTB(key)
+    # htb.getPersonnalInfo()
+    # exit()
     cmd = ""
     print("HTB Shell - put help to get info")
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
@@ -522,6 +537,8 @@ if __name__ == "__main__":
                 print("     Get spawned box")
                 print("{}shoutbox{}".format(Color.GREEN,Color.RESET))
                 print("     Listen the shoutbox, permit to send to the shoutbox too")
+                print("{}profile{} name".format(Color.Green,Color.RESET))
+                print("     Get profile by name")
                 print("{}getbyfilter{} OS difficulty".format(Color.GREEN,Color.RESET))
                 print("     Get Box by some filter")
                 print("{}setActive{}".format(Color.GREEN,Color.RESET))
@@ -622,8 +639,14 @@ if __name__ == "__main__":
                     print("[-] Syntaxe error : getbyfilter OS difficulty")
                 else:
                     htb.getByFilter(args[0],args[1],_active=active)
+            elif command.lower() == "profile":
+                if len(args) >= 1:
+                    htb.getPersonnalInfo(name=args[0])
+                else:
+                    htb.getPersonnalInfo()
             else:
                 print("[-] Command not found")
+
         except Exception as e:
             # raise(e)
             print("Error in command: {}".format(e))
