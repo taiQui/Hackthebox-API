@@ -126,7 +126,10 @@ class HTB:
         tmp['user'] = str(r['user_owns'])
         tmp['root'] = str(r['root_owns'])
         if spawned != None:
-            tmp['spawned'] = HTB.isUp(r['id'],spawned)
+            try:
+                tmp['spawned'] = HTB.isUp(r['id'],spawned)
+            except:
+                tmp['spawned'] = None
         else:
             tmp['spawned'] = None
         if user:
@@ -435,6 +438,9 @@ class HTB:
         print('Profil URL : https://www.hackthebox.eu/home/users/profile/{}'.format(r['id']))
 
 
+    def test(self):
+        pass
+
     def send2Shoutbox(self,text):
         r = self.requests("https://www.hackthebox.eu/api/shouts/new",method="POST",data = { "text" : text },_json=True)
         return r['success'] == '1'
@@ -495,6 +501,7 @@ if __name__ == "__main__":
         with open(HOME+'/.htb_api.txt','r') as f:
             key = f.read().replace('\n','')
     htb = HTB(key)
+    htb.test()
     # htb.getPersonnalInfo()
     # exit()
     cmd = ""
@@ -648,7 +655,7 @@ if __name__ == "__main__":
                 print("[-] Command not found")
 
         except Exception as e:
-            # raise(e)
             print("Error in command: {}".format(e))
+            # raise(e)
         cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
     # a.getBoxByDifficulty("e,_active=False)
