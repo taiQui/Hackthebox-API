@@ -4,6 +4,7 @@
 # Author : taiQui
 
 import requests,json,argparse,re
+from getkey import getkey, keys
 from os.path import isfile
 from os import getcwd,getenv
 import urllib3
@@ -505,6 +506,72 @@ class HTB:
                 return r.text
 
 
+class pile:
+    def __init__(self):
+        self.pos = 0
+        self.liste = []
+    def getUP(self):
+        self.pos -= 1
+        if self.pos < 0:
+            self.pos = 0
+        tmp = self.liste[self.pos]
+        return tmp
+    def getDOWN(self):
+        self.pos += 1
+        if self.pos >= len(self.liste) -1:
+            self.pos = len(self.liste) -1
+        tmp = self.liste[self.pos]
+        return tmp
+    def set(self,item):
+        self.liste.append(item)
+        self.found()
+    def found(self):
+        self.pos = len(self.liste)
+
+
+stack = pile()
+
+def getInput():
+    global stack
+    buffer = ""
+    cmd = ""
+    print("{}$~{} ".format(Color.RED,Color.RESET),end="\r")
+    # buffer = getkey()
+    while buffer != "\n":
+        buffer = getkey()
+        # print(cmd)
+        # tab
+        if buffer == "\n":
+            break
+        if buffer == "\t":
+            aux = []
+            for i in available_commands:
+                if i.startswith(cmd):
+                    aux.append(i)
+            if len(aux) == 1:
+                cmd = aux[0]
+            else:
+                aux = ' '.join(aux)
+                print("{}            ".format(aux))
+        # up arrow
+        elif buffer == keys.UP:
+            if len(stack.liste) > 0:
+                cmd = stack.getUP()
+        elif buffer == keys.DOWN:
+            if len(stack.liste) > 0:
+                cmd = stack.getDOWN()
+        elif buffer == keys.BACKSPACE:
+            # print("DELETE")
+            cmd = cmd[:-1]
+        else:
+            cmd += buffer
+        print("{}$~{} {}          ".format(Color.RED,Color.RESET,cmd),end="\r")
+    print("{}$~{} {}              ".format(Color.RED,Color.RESET,cmd))
+    stack.set(cmd)
+    return cmd
+
+available_commands = ['reset','flag','getboxs','gbbo','gbbd','gbbr','getboxbyname','getowned','getnotowned','shoutbox','profile','getbyfilter','setActive','setNumber']
+
 
 if __name__ == "__main__":
     args = parser()
@@ -526,9 +593,10 @@ if __name__ == "__main__":
     print("HTB Shell - put help to get info")
     if htb.isvip:
         print("You are VIP")
+        available_commands += ['start','stop','extend','getspawned']
     else:
         print("You are not VIP")
-    cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
+    cmd = getInput()
     active = True
     number = 20
     while cmd.lower() not in ['exit','quit','q']:
@@ -680,5 +748,6 @@ if __name__ == "__main__":
         except Exception as e:
             print("Error in command: {}".format(e))
             # raise(e)
-        cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
+        # cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
+        cmd = getInput()
     # a.getBoxByDifficulty("e,_active=False)
