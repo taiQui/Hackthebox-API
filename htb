@@ -28,6 +28,7 @@ class Color:
     UNDERLINE = '\033[4m'
     RESET = '\033[0m'
     ORANGE = '\033[33m'
+    BOLD = '\033[1m'
 
 def getCMD(cmd):
     command = cmd.split(' ')[0]
@@ -172,13 +173,13 @@ class HTB:
     @staticmethod
     def rate2Color(point):
         if point == 20:
-            return Color.GREEN+"[+]"+Color.RESET
+            return Color.BOLD+Color.GREEN+"[+]"+Color.RESET
         if point == 30:
-            return Color.ORANGE+"[+]"+Color.RESET
+            return Color.BOLD+Color.ORANGE+"[+]"+Color.RESET
         if point == 40:
-            return Color.RED+"[+]"+Color.RESET
+            return Color.BOLD+Color.RED+"[+]"+Color.RESET
         else:
-            return Color.WHITE+"[+]"+Color.RESET
+            return Color.BOLD+Color.WHITE+"[+]"+Color.RESET
 
     def getAssigned(self):
         return self.requests("https://www.hackthebox.eu/api/machines/assigned",_json=True)[0]['id']
@@ -292,6 +293,7 @@ class HTB:
             print("    Points: {} | {}{}{} | {} | {}".format(box['points'],Color.RED,"\u25cf",Color.RESET,user,root))
         else:
             print("    Points: {} | {} | {}".format(box['points'],user,root))
+        print("")
 
     def getBoxByOS(self,os,_active=True,_number=None):
         boxs = None
