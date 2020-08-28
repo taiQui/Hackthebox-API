@@ -155,7 +155,8 @@ class HTB:
                     boxs.append(box)
                 return boxs
         except:
-            return "[-] You are probably not VIP"
+            print("[-] You are probably not VIP")
+            return
     @staticmethod
     def isOwned(id,owned):
         for box in owned:
@@ -512,7 +513,7 @@ if __name__ == "__main__":
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
     active = True
     number = 20
-    while cmd.lower() != "exit" and cmd.lower() != "quit":
+    while cmd.lower() not in ['exit','quit','q']:
         try:
             command,args = getCMD(cmd)
             if command.lower() == "help":
