@@ -145,14 +145,17 @@ class HTB:
 
     def getSpawned(self,_send=False):
         r =  self.requests("https://www.hackthebox.eu/api/machines/spawned/",_json=True)
-        if not _send:
-            for box in r:
-                HTB.printBox(self.getBoxById(box['id'],_noprint=True))
-        else:
-            boxs = []
-            for box in r:
-                boxs.append(box)
-            return boxs
+        try:
+            if not _send:
+                for box in r:
+                    HTB.printBox(self.getBoxById(box['id'],_noprint=True))
+            else:
+                boxs = []
+                for box in r:
+                    boxs.append(box)
+                return boxs
+        except:
+            return "[-] You are probably not VIP"
     @staticmethod
     def isOwned(id,owned):
         for box in owned:
