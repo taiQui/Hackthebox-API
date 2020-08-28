@@ -443,17 +443,25 @@ class HTB:
                     if self.send2Shoutbox(tmp):
                         print("[+] Message Sent !")
     def getPersonnalInfo(self,name=None):
-        # if name == None:
-        #     name = input('Give your HTB name : ')
-        name = ""
-        r = self.requests("https://www.hackthebox.eu/api/user/profile",data={"username":name},_json=True)
-        print(r)
+        if name == None:
+            name = input('Give your HTB name : ')
+        # print(";"+name+";")
+        # # name = ""
+        r = self.requests("https://www.hackthebox.eu/api/user/id",data={"username":name},_json=True,method="POST")
+        # print(r)
         if r == "":
             print("No Users found for name : {}".format(name))
             return
-        print("Username : {} - id : {}".format(r['username'],r['id']))
-        print("Point : {} - User : {} - Root : {}".format(r['points'],r['userOwns'],r['rootOwns']))
-        print('Rank : {}'.format(r['rank']))
+        if "message" in r:
+            if r['message'] == "":
+                print("No Users found for name : {}".format(name))
+                return
+            else:
+                print("Special case found, contact dev and show this : ")
+                print(r)
+        # print("Username : {} - id : {}".format(r['username'],r['id']))
+        # print("Point : {} - User : {} - Root : {}".format(r['points'],r['userOwns'],r['rootOwns']))
+        # print('Rank : {}'.format(r['rank']))
         print('Profil URL : https://www.hackthebox.eu/home/users/profile/{}'.format(r['id']))
 
 
@@ -472,40 +480,19 @@ class HTB:
                     'Connection'     : 'Close',
                 }
         if method == "GET":
-            if _json:
-                r = self.session.get(url,headers=head,verify=False)
-
-                if r.status_code == 401:
-                    raise Exception("Bad API key")
-                return r.json()
-            r =  self.session.get(url,headers=head,verify=False)
+            r = self.session.get(url,headers=head,verify=False)
             if r.status_code == 401:
                 raise Exception("Bad API key")
+            if _json:
+                return r.json()
             return r.text
         elif method == "POST":
+            r = self.session.post(url,headers=head,data=data,verify=False)
+            if r.status_code == 401:
+                raise Exception("Bad API key")
             if _json:
-                if data == None:
-                    r =  self.session.post(url,headers=head,verify=False)
-                    if r.status_code == 401:
-                        raise Exception("Bad API key")
-                    return r.json()
-                else:
-                    r = self.session.post(url,headers=head,data=data,verify=False)
-                    if r.status_code == 401:
-                        raise Exception("Bad API key")
-                    return r.json()
-            if data == None:
-                r = self.session.post(url,headers=head,verify=False)
-                if r.status_code == 401:
-                    raise Exception('Bad API key')
-                return r.text
-            else:
-                r = self.session.post(url,headers=head,data=data,verify=False)
-                if r.status_code == 401:
-                    raise Exception('Bad API key')
-                return r.text
-
-
+                return r.json()
+            return r.text
 class pile:
     def __init__(self):
         self.pos = 0
@@ -544,15 +531,18 @@ def getInput():
         if buffer == "\n":
             break
         if buffer == "\t":
-            aux = []
-            for i in available_commands:
-                if i.startswith(cmd):
-                    aux.append(i)
-            if len(aux) == 1:
-                cmd = aux[0]
+            if len(cmd) == 0:
+                print(' '.join(available_commands))
             else:
-                aux = ' '.join(aux)
-                print("{}            ".format(aux))
+                aux = []
+                for i in available_commands:
+                    if i.startswith(cmd):
+                        aux.append(i)
+                if len(aux) == 1:
+                    cmd = aux[0]
+                else:
+                    aux = ' '.join(aux)
+                    print("{}            ".format(aux))
         # up arrow
         elif buffer == keys.UP:
             if len(stack.liste) > 0:
@@ -664,43 +654,58 @@ if __name__ == "__main__":
                         print("[+] Number set to {}".format(args[0]))
                         number = int(args[0])
             elif command.lower() == "start":
-                if args[0].isdigit():
-                    htb.start(args[0])
+                if len(args) == 0:
+                    print("[-] Syntax error : start ID")
                 else:
-                    htb.start(args[0],_name=args[0])
+                    if args[0].isdigit():
+                        htb.start(args[0])
+                    else:
+                        htb.start(args[0],_name=args[0])
             elif command.lower() == "stop":
-                if args[0].isdigit():
-                    htb.stop(args[0])
+                if len(args) == 0:
+                    print("[-] Syntax error : stop ID")
                 else:
-                    htb.stop(args[0],_name=args[0])
+                    if args[0].isdigit():
+                        htb.stop(args[0])
+                    else:
+                        htb.stop(args[0],_name=args[0])
             elif command.lower() == "extend":
-                if args[0].isdigit():
-                    htb.extend(args[0])
+                if len(args) == 0:
+                    print("[-] Syntax error : extend ID")
                 else:
-                    htb.extend(args[0],_name=args[0])
+                    if args[0].isdigit():
+                        htb.extend(args[0])
+                    else:
+                        htb.extend(args[0],_name=args[0])
             elif command.lower() == "reset":
-                if args[0].isdigit():
-                    htb.reset(args[0])
+                if len(args) == 0:
+                    print("[-] Syntax error : reset ID")
                 else:
-                    htb.reset(args[0],_name=args[0])
+                    if args[0].isdigit():
+                        htb.reset(args[0])
+                    else:
+                        htb.reset(args[0],_name=args[0])
             elif command.lower() == "flag":
                 difficulty = 5
-                if len(args) < 3:
-                    difficulty = 5
+                if len(args) == 0 or len(args) == 1:
+                    print("[-] Syntax error : flag ID FLAG [DIFFICULTY]")
                 else:
-                    if args[2].isdigit():
-                        if int(difficulty) <= 0 or int(difficulty) > 10:
-                            print("Difficulty not valid for {} - set to 5 by default".format(difficulty))
-                            difficulty = 5
-                        else:
-                            difficulty = int(args[2])
-                    else:
-                        print("Difficulty not valid for {} - Set to 5 by default".format(difficulty))
+                    if len(args) < 3:
                         difficulty = 5
-                if args[0].isdigit():
-                    htb.setFlag(args[0],args[1],difficulty=difficulty)
-                else:
-                    htb.setFlag(args[0],args[1],difficulty=difficulty,_name=args[0])
+                    else:
+                        if args[2].isdigit():
+                            if int(difficulty) <= 0 or int(difficulty) > 10:
+                                print("Difficulty not valid for {} - set to 5 by default".format(difficulty))
+                                difficulty = 5
+                            else:
+                                difficulty = int(args[2])
+                        else:
+                            print("Difficulty not valid for {} - Set to 5 by default".format(difficulty))
+                            difficulty = 5
+                    if args[0].isdigit():
+                        htb.setFlag(args[0],args[1],difficulty=difficulty)
+                    else:
+                        htb.setFlag(args[0],args[1],difficulty=difficulty,_name=args[0])
             elif command.lower() == "getboxs":
                 print("="*(len("  All Box")+4))
                 print("  All Box")
@@ -747,7 +752,7 @@ if __name__ == "__main__":
 
         except Exception as e:
             print("Error in command: {}".format(e))
-            # raise(e)
+            raise(e)
         # cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
         cmd = getInput()
     # a.getBoxByDifficulty("e,_active=False)
