@@ -97,6 +97,7 @@ class HTB:
         self.session = requests.Session()
         self.BOXS = None
         self.active = None
+        self.isvip = self.isVIP()
 
     def getAllBox(self,_number=None,_active=True):
         boxs = self.requests("https://www.hackthebox.eu/api/machines/get/all",_json=True)[::-1]
@@ -158,6 +159,17 @@ class HTB:
         except:
             print("[-] You are probably not VIP")
             return
+    def isVIP(self):
+        r =  self.requests("https://www.hackthebox.eu/api/machines/spawned/",_json=True)
+        if "success" in r:
+            if r['success'] == "0":
+                return False
+            else:
+                print("Not implemented case found - contact dev with response below")
+                print(r)
+        else:
+            return True
+
     @staticmethod
     def isOwned(id,owned):
         for box in owned:
@@ -507,11 +519,15 @@ if __name__ == "__main__":
         with open(HOME+'/.htb_api.txt','r') as f:
             key = f.read().replace('\n','')
     htb = HTB(key)
-    htb.test()
+    htb.isVIP()
     # htb.getPersonnalInfo()
     # exit()
     cmd = ""
     print("HTB Shell - put help to get info")
+    if htb.isvip:
+        print("You are VIP")
+    else:
+        print("You are not VIP")
     cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
     active = True
     number = 20
@@ -522,12 +538,15 @@ if __name__ == "__main__":
                 print("="*(len("HELP")+4))
                 print("  HELP")
                 print("="*(len("HELP")+4))
-                print("\n{}start{} ID".format(Color.GREEN,Color.RESET))
-                print("     Start Box")
-                print("{}stop{} ID".format(Color.GREEN,Color.RESET))
-                print("     Stop Box")
-                print("{}extend{} ID".format(Color.GREEN,Color.RESET))
-                print("     Extend Box time")
+                if htb.isvip:
+                    print("\n{}start{} ID".format(Color.GREEN,Color.RESET))
+                    print("     Start Box")
+                    print("{}stop{} ID".format(Color.GREEN,Color.RESET))
+                    print("     Stop Box")
+                    print("{}extend{} ID".format(Color.GREEN,Color.RESET))
+                    print("     Extend Box time")
+                    print("{}getspawned{}".format(Color.GREEN,Color.RESET))
+                    print("     Get spawned box")
                 print("{}reset{} ID".format(Color.GREEN,Color.RESET))
                 print("     Reset Box")
                 print("{}flag{} ID FLAG [DIFFICULTY 1-10]".format(Color.GREEN,Color.RESET))
@@ -546,8 +565,6 @@ if __name__ == "__main__":
                 print("     Get Box owned")
                 print("{}getnotowned{}".format(Color.GREEN,Color.RESET))
                 print("     Get Active box not owned yet")
-                print("{}getspawned{}".format(Color.GREEN,Color.RESET))
-                print("     Get spawned box")
                 print("{}shoutbox{}".format(Color.GREEN,Color.RESET))
                 print("     Listen the shoutbox, permit to send to the shoutbox too")
                 print("{}profile{} name".format(Color.GREEN,Color.RESET))
