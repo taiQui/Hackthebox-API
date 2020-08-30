@@ -522,7 +522,7 @@ def getInput():
     global stack
     buffer = ""
     cmd = ""
-    print("{}$~{} ".format(Color.RED,Color.RESET),end="\r")
+    print("{}$~{} \33[5m_\33[25m ".format(Color.RED,Color.RESET),end="\r")
     # buffer = getkey()
     while buffer != "\n":
         buffer = getkey()
@@ -555,7 +555,7 @@ def getInput():
             cmd = cmd[:-1]
         else:
             cmd += buffer
-        print("{}$~{} {}          ".format(Color.RED,Color.RESET,cmd),end="\r")
+        print("{}$~{} {}\33[5m_\33[25m          ".format(Color.RED,Color.RESET,cmd),end="\r")
     print("{}$~{} {}              ".format(Color.RED,Color.RESET,cmd))
     stack.set(cmd)
     return cmd
