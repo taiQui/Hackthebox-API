@@ -4,7 +4,8 @@
 # Author : taiQui
 
 import requests,json,argparse,re
-from getkey import getkey, keys
+from getkey import keys
+import readchar
 from os.path import isfile
 from os import getcwd,getenv
 import urllib3
@@ -16,6 +17,45 @@ def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n','--nb_machine',help="Active Machine number to print, default : all",default=-1,type=int)
     return parser.parse_args()
+
+
+
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the
+screen."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self): return self.impl()
+
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
 
 class Color:
     BLACK = '\033[30m'
@@ -524,11 +564,13 @@ def getInput():
     cmd = ""
     print("{}$~{} \33[5m_\33[25m ".format(Color.RED,Color.RESET),end="\r")
     # buffer = getkey()
-    while buffer != "\n":
-        buffer = getkey()
+    while buffer != "\r":
+        buffer = str(readchar.readkey())
+        if buffer == "":
+            continue
         # print(cmd)
         # tab
-        if buffer == "\n":
+        if buffer == "\r":
             break
         if buffer == "\t":
             if len(cmd) == 0:
@@ -633,6 +675,7 @@ if __name__ == "__main__":
                 print("     Inverse active values, if you want or not get only active box from research ")
                 print("{}setNumber{} number".format(Color.GREEN,Color.RESET))
                 print("     Put the Box's number to print - default all active or 20")
+                print("{}exit{} or {}quit{} or {}q{} to quit".format(Color.GREEN,Color.RESET,Color.GREEN,Color.RESET,Color.GREEN,Color.RESET))
                 print(Color.YELLOW+"ID"+Color.BLUE+" can be ID number or Box name")
                 print(Color.YELLOW+"Difficulty "+Color.BLUE+"for getboxbydifficulty can be Number or strings like \"easy\""+Color.RESET)
             elif command.lower() == "setactive":
