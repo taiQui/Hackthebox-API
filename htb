@@ -568,10 +568,13 @@ def getInput():
         buffer = str(readchar.readkey())
         if buffer == "":
             continue
-        # print(cmd)
-        # tab
+        # ENTER
         if buffer == "\r":
             break
+        # CTRL + c
+        if buffer == "\x03":
+            return "quit"
+        # tab
         if buffer == "\t":
             if len(cmd) == 0:
                 print(' '.join(available_commands))
@@ -589,9 +592,11 @@ def getInput():
         elif buffer == keys.UP:
             if len(stack.liste) > 0:
                 cmd = stack.getUP()
+        # down arrow
         elif buffer == keys.DOWN:
             if len(stack.liste) > 0:
                 cmd = stack.getDOWN()
+        # delete
         elif buffer == keys.BACKSPACE:
             # print("DELETE")
             cmd = cmd[:-1]
@@ -602,7 +607,7 @@ def getInput():
     stack.set(cmd)
     return cmd
 
-available_commands = ['reset','flag','getboxs','gbbo','gbbd','gbbr','getboxbyname','getowned','getnotowned','shoutbox','profile','getbyfilter','setActive','setNumber']
+available_commands = ['reset','flag','getboxs','gbbo','gbbd','gbbr','getboxbyname','getowned','getnotowned','shoutbox','profile','getbyfilter','setActive','setNumber','exit','quit','q']
 
 
 if __name__ == "__main__":
