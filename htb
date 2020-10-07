@@ -15,46 +15,8 @@ HOME = getenv('HOME')
 
 def parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n','--nb_machine',help="Active Machine number to print, default : all",default=-1,type=int)
+    parser.add_argument('-t','--test_mode',help="activate test mode - run only test methode",action="store_true")
     return parser.parse_args()
-
-
-
-class _Getch:
-    """Gets a single character from standard input.  Does not echo to the
-screen."""
-    def __init__(self):
-        try:
-            self.impl = _GetchWindows()
-        except ImportError:
-            self.impl = _GetchUnix()
-
-    def __call__(self): return self.impl()
-
-
-class _GetchUnix:
-    def __init__(self):
-        import tty, sys
-
-    def __call__(self):
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
-
-    def __call__(self):
-        import msvcrt
-        return msvcrt.getch()
 
 
 class Color:
@@ -505,8 +467,125 @@ class HTB:
         print('Profil URL : https://www.hackthebox.eu/home/users/profile/{}'.format(r['id']))
 
 
+        for i in range(max):
+            self.printBox(newlist[i])
+
+
+    def getBoxByName(self,name,_active=False):
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        print("="*(len("  Result for {}".format(name))+4))
+        print("  Result for {}".format(name))
+        print("="*(len("  Result for {}".format(name))+4))
+        for box in boxs:
+            if box['name'].lower() == name.lower():
+                HTB.printBox(box)
+                return
+    def getBoxById(self,id,_active=False,_noprint=False):
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        if not _noprint:
+            print("="*(len("  Result for {}".format(id))+4))
+            print("  Result for {}".format(id))
+            print("="*(len("  Result for {}".format(id))+4))
+        for box in boxs:
+            if int(box['id']) == int(id):
+                return box
+
+    def getOwned(self,_active=True,_send=False):
+        r = self.requests("https://www.hackthebox.eu/api/machines/owns",_json=True)
+        if _send:
+            return r
+        for owned in r:
+            HTB.printBox(self.getBoxById(owned['id'],_noprint=True))
+    def getActiveNotOwned(self,_active=True):
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        r = self.requests("https://www.hackthebox.eu/api/machines/owns",_json=True)
+        ids = [a['id'] for a in r]
+        for box in boxs:
+            if box['id'] not in ids:
+                HTB.printBox(box)
+            else:
+                for owned in r:
+                    if owned['id'] == box['id']:
+                        if owned['owned_user'] ^ owned['owned_root']:
+                            HTB.printBox(box)
+
+    def getBoxByDifficulty(self,difficulty,_active=True,_number=None):
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        if not difficulty.isdigit():
+            if difficulty.lower() in ['easy','ez','facile']:
+                difficulty = 20
+            elif difficulty.lower() in ['medium','moyen','normal']:
+                difficulty = 30
+            elif difficulty.lower() == "hard":
+                difficulty = 40
+            elif difficulty == "insane":
+                difficulty = 50
+            else:
+                raise Exception("Difficulty not understood for {}".format(difficulty))
+        print("="*(len("  Box with difficulty {}".format(difficulty))+4))
+        print("  Box with difficulty {}".format(difficulty))
+        print("="*(len("  Box with difficulty {}".format(difficulty))+4))
+        max = _number if _number != None  else len(boxs)
+        for i in range(len(boxs)):
+            if int(boxs[i]['points']) == int(difficulty):
+                HTB.printBox(boxs[i])
+    @staticmethod
+    def printBox(box):
+
+        print(HTB.rate2Color(int(box['points']))+" {} (ID: {}{}{}) {}{}★{}".format(box['name'],Color.BLUE,box['id'],Color.RESET,box['rating'],Color.YELLOW,Color.RESET))
+        print("    {} - {}{}{}".format(box['os'],Color.YELLOW,box['ip'],Color.RESET))
+        user = ""
+        root = ""
+        if box['owned_user']:
+            user = "{} U{}: {}".format(Color.GREEN,Color.RESET,box['user'])
+        else:
+            user = "{} U{}: {}".format(Color.RED,Color.RESET,box['user'])
+        if box['owned_root']:
+            root = "{} R{}: {}".format(Color.GREEN,Color.RESET,box['root'])
+        else:
+            root = "{} R{}: {}".format(Color.RED,Color.RESET,box['root'])
+        if box['spawned']:
+            print("    Points: {} | {}{}{} | {} | {}".format(box['points'],Color.GREEN,"\u25cf",Color.RESET,user,root))
+        elif box['spawned'] == False:
+            print("    Points: {} | {}{}{} | {} | {}".format(box['points'],Color.RED,"\u25cf",Color.RESET,user,root))
+        else:
+            print("    Points: {} | {} | {}".format(box['points'],user,root))
+        print("")
+
+    def getBoxByOS(self,os,_active=True,_number=None):
+        boxs = None
+        if _active != self.active:
+            boxs = self.getAllBox(_active=_active)
+        else:
+            boxs = self.BOXS if self.BOXS != None else self.getAllBox(_active=_active)
+        print("="*(len("Searching for {} OS Boxs".format(os))+4))
+        print("  Searching for {} OS Boxs".format(os))
+        print("="*(len("Searching for {} OS Boxs".format(os))+4))
+        max = _number if _number != None  else 30
+        for i in range(len(boxs)):
+            if boxs[i]['os'].lower() == os.lower():
+                self.printBox(boxs[i])
+
     def test(self):
-        pass
+        # BOXS = self.getAllBox(_active=True)
+        CHALLS = self.requests("https://www.hackthebox.eu/api/challenges/stego",_json=True)
+        print(CHALLS)
 
     def send2Shoutbox(self,text):
         r = self.requests("https://www.hackthebox.eu/api/shouts/new",method="POST",data = { "text" : text },_json=True)
@@ -626,6 +705,11 @@ if __name__ == "__main__":
     htb.isVIP()
     # htb.getPersonnalInfo()
     # exit()
+
+    if args.test_mode:
+        htb.test()
+        exit()
+
     cmd = ""
     print("HTB Shell - put help to get info")
     if htb.isvip:
@@ -800,7 +884,7 @@ if __name__ == "__main__":
 
         except Exception as e:
             print("Error in command: {}".format(e))
-            raise(e)
+            # raise(e)
         # cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
         cmd = getInput()
     # a.getBoxByDifficulty("e,_active=False)
