@@ -450,7 +450,7 @@ class HTB:
         # print(";"+name+";")
         # # name = ""
         r = self.requests("https://www.hackthebox.eu/api/user/id",data={"username":name},_json=True,method="POST")
-        # print(r)
+        print(r)
         if r == "":
             print("No Users found for name : {}".format(name))
             return
@@ -465,10 +465,10 @@ class HTB:
         # print("Point : {} - User : {} - Root : {}".format(r['points'],r['userOwns'],r['rootOwns']))
         # print('Rank : {}'.format(r['rank']))
         print('Profil URL : https://www.hackthebox.eu/home/users/profile/{}'.format(r['id']))
+        # r = self.requests("https://www.hackthebox.eu/home/users/profile/{}".format(r['id']),_json=True)
+        # print(r)
 
 
-        for i in range(max):
-            self.printBox(newlist[i])
 
 
     def getBoxByName(self,name,_active=False):
@@ -884,7 +884,7 @@ if __name__ == "__main__":
 
         except Exception as e:
             print("Error in command: {}".format(e))
-            # raise(e)
+            raise(e)
         # cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
         cmd = getInput()
     # a.getBoxByDifficulty("e,_active=False)
