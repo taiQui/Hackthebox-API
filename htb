@@ -465,8 +465,6 @@ class HTB:
         # print("Point : {} - User : {} - Root : {}".format(r['points'],r['userOwns'],r['rootOwns']))
         # print('Rank : {}'.format(r['rank']))
         print('Profil URL : https://www.hackthebox.eu/home/users/profile/{}'.format(r['id']))
-        # r = self.requests("https://www.hackthebox.eu/home/users/profile/{}".format(r['id']),_json=True)
-        # print(r)
 
 
 
