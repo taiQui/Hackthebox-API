@@ -449,7 +449,11 @@ class HTB:
             name = input('Give your HTB name : ')
         # print(";"+name+";")
         # # name = ""
-        r = self.requests("https://www.hackthebox.eu/api/user/id",data={"username":name},_json=True,method="POST")
+        try:
+            r = self.requests("https://www.hackthebox.eu/api/user/id",data={"username":name},_json=True,method="POST")
+        except:
+            print(f"Name : {name} not found !" )
+            return
         print(r)
         if r == "":
             print("No Users found for name : {}".format(name))
@@ -882,7 +886,7 @@ if __name__ == "__main__":
 
         except Exception as e:
             print("Error in command: {}".format(e))
-            raise(e)
+            # raise(e)
         # cmd = input("{}$~{} ".format(Color.RED,Color.RESET))
         cmd = getInput()
     # a.getBoxByDifficulty("e,_active=False)
