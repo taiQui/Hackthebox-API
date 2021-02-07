@@ -16,6 +16,7 @@ HOME = getenv('HOME')
 def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-t','--test_mode',help="activate test mode - run only test methode",action="store_true")
+    parser.add_argument('-x','--execute',help="run this command")
     return parser.parse_args()
 
 
@@ -712,14 +713,17 @@ if __name__ == "__main__":
         htb.test()
         exit()
 
-    cmd = ""
     print("HTB Shell - put help to get info")
     if htb.isvip:
         print("You are VIP")
         available_commands += ['start','stop','extend','getspawned']
     else:
         print("You are not VIP")
-    cmd = getInput()
+    if args.execute != None:
+        cmd = args.execute
+    else:
+        cmd = ""
+        cmd = getInput()
     active = True
     number = 20
     while cmd.lower() not in ['exit','quit','q']:
